@@ -115,3 +115,100 @@ test("prj auth logout removes the saved token", async () => {
   await runAuth("logout", undefined);
   expect(JSON.parse(readFileSync(configPath(), "utf8"))).toEqual({});
 });
+
+test("prj auth --non-interactive status reports unauthenticated without a token", async () => {
+  let stdout = "";
+  const origLog = console.log;
+  console.log = (...args: unknown[]) => {
+    stdout += args.map((a) => (typeof a === "string" ? a : String(a))).join(" ") + "\n";
+  };
+  try {
+    await runAuth(undefined, undefined, true, "status");
+  } finally {
+    console.log = origLog;
+  }
+  expect(JSON.parse(stdout)).toEqual({
+    success: true,
+    action: "status",
+    authenticated: false,
+    user: null,
+    tokenSource: null,
+  });
+});
+
+test("prj auth --non-interactive status emits authenticated env token source", async () => {
+  process.env.GITHUB_TOKEN = "ghp_cccccccccccccccccccccccccccccccc";
+  globalThis.fetch = (async (url: string | URL | Request) => {
+    if (url.toString().endsWith("/user")) {
+      return new Response(JSON.stringify({ login: "alice" }), {
+        status: 200, headers: { "content-type": "application/json" },
+      });
+    }
+    throw new Error(`unexpected ${url}`);
+  }) as typeof fetch;
+
+  let stdout = "";
+  const origLog = console.log;
+  console.log = (...args: unknown[]) => {
+    stdout += args.map((a) => (typeof a === "string" ? a : String(a))).join(" ") + "\n";
+  };
+  try {
+    await runAuth(undefined, undefined, true, "status");
+  } finally {
+    console.log = origLog;
+  }
+  expect(JSON.parse(stdout)).toEqual({
+    success: true,
+    action: "status",
+    authenticated: true,
+    user: "alice",
+    tokenSource: "env",
+  });
+});
+
+test("prj auth --non-interactive login persists a verified token", async () => {
+  let stdout = "";
+  const origLog = console.log;
+  console.log = (...args: unknown[]) => {
+    stdout += args.map((a) => (typeof a === "string" ? a : String(a))).join(" ") + "\n";
+  };
+  globalThis.fetch = (async (url: string | URL | Request) => {
+    if (url.toString().endsWith("/user")) {
+      return new Response(JSON.stringify({ login: "alice" }), {
+        status: 200, headers: { "content-type": "application/json" },
+      });
+    }
+    throw new Error(`unexpected ${url}`);
+  }) as typeof fetch;
+
+  try {
+    await runAuth(undefined, "ghp_dddddddddddddddddddddddddddddddd", true, "login");
+  } finally {
+    console.log = origLog;
+  }
+  expect(JSON.parse(stdout)).toEqual({
+    success: true,
+    action: "login",
+    user: "alice",
+  });
+  expect(JSON.parse(readFileSync(configPath(), "utf8"))).toEqual({
+    githubToken: "ghp_dddddddddddddddddddddddddddddddd",
+  });
+});
+
+test("prj auth --non-interactive rejects unknown actions", async () => {
+  let stdout = "";
+  const origLog = console.log;
+  console.log = (...args: unknown[]) => {
+    stdout += args.map((a) => (typeof a === "string" ? a : String(a))).join(" ") + "\n";
+  };
+  try {
+    await expect(runAuth(undefined, undefined, true, "wat")).rejects.toThrow("__exit:1");
+  } finally {
+    console.log = origLog;
+  }
+  expect(exitCode).toBe(1);
+  const out = JSON.parse(stdout);
+  expect(out.success).toBe(false);
+  expect(out.error).toContain("Unknown action");
+});

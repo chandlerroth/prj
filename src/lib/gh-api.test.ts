@@ -1,9 +1,13 @@
 import { test, expect, beforeEach, afterEach } from "bun:test";
+import { mkdirSync, mkdtempSync, writeFileSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
 import { resolveToken, _resetTokenCache, fetchGhRepos, searchRepos, createRepo, redactToken } from "./gh-api.ts";
 
 const origFetch = globalThis.fetch;
 const origToken = process.env.GITHUB_TOKEN;
 const origGhToken = process.env.GH_TOKEN;
+const origHome = process.env.HOME;
 
 beforeEach(() => {
   _resetTokenCache();
@@ -16,6 +20,8 @@ afterEach(() => {
   if (origToken === undefined) delete process.env.GITHUB_TOKEN;
   else process.env.GITHUB_TOKEN = origToken;
   if (origGhToken !== undefined) process.env.GH_TOKEN = origGhToken;
+  if (origHome === undefined) delete process.env.HOME;
+  else process.env.HOME = origHome;
   _resetTokenCache();
 });
 
@@ -28,6 +34,17 @@ test("resolveToken falls back to GH_TOKEN", () => {
   process.env.GH_TOKEN = "gh-token";
   _resetTokenCache();
   expect(resolveToken()).toBe("gh-token");
+});
+
+test("resolveToken falls back to prj config when env is unset", () => {
+  const home = mkdtempSync(join(tmpdir(), "prj-gh-"));
+  process.env.HOME = home;
+  delete process.env.GITHUB_TOKEN;
+  delete process.env.GH_TOKEN;
+  mkdirSync(join(home, ".config", "prj"), { recursive: true });
+  writeFileSync(join(home, ".config", "prj", "config.json"), JSON.stringify({ githubToken: "cfg-token" }));
+  _resetTokenCache();
+  expect(resolveToken()).toBe("cfg-token");
 });
 
 function jsonResponse(body: unknown, headers: Record<string, string> = {}) {
