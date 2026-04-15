@@ -99,6 +99,31 @@ test("delete --non-interactive --force removes a clean repo", async () => {
   expect(existsSync(dir)).toBe(false);
 });
 
+test("delete --non-interactive --force removes a repo by absolute path", async () => {
+  const home = process.env.HOME!;
+  const dir = join(home, "Projects", "alice", "one");
+  await makeRepo(dir);
+
+  await runDelete(dir, true, true);
+  expect(existsSync(dir)).toBe(false);
+});
+
+test("delete --non-interactive removes the current repo with '.'", async () => {
+  const home = process.env.HOME!;
+  const dir = join(home, "Projects", "alice", "one");
+  const origCwd = process.cwd();
+  await makeRepo(dir);
+
+  process.chdir(dir);
+  try {
+    await runDelete(".", true, true);
+  } finally {
+    process.chdir(origCwd);
+  }
+
+  expect(existsSync(dir)).toBe(false);
+});
+
 test("delete --non-interactive without --force refuses a dirty repo", async () => {
   const home = process.env.HOME!;
   const dir = join(home, "Projects", "alice", "one");
@@ -115,4 +140,22 @@ test("delete --non-interactive with missing project errors", async () => {
 
   await expect(runDelete("alice/two", true, false)).rejects.toThrow("__exit:1");
   expect(exitCode).toBe(1);
+});
+
+test("delete --non-interactive with '.' outside a tracked project errors", async () => {
+  const home = process.env.HOME!;
+  const dir = join(home, "Projects", "alice", "one");
+  const other = mkdtempSync(join(tmpdir(), "prj-del-cwd-"));
+  const origCwd = process.cwd();
+  await makeRepo(dir);
+
+  process.chdir(other);
+  try {
+    await expect(runDelete(".", true, false)).rejects.toThrow("__exit:1");
+  } finally {
+    process.chdir(origCwd);
+  }
+
+  expect(exitCode).toBe(1);
+  expect(stderr).toContain("Current directory is not a tracked project.");
 });

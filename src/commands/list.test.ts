@@ -55,6 +55,7 @@ test("list --non-interactive emits an entry per org/repo", async () => {
     expect(entry).toHaveProperty("ahead");
     expect(entry).toHaveProperty("behind");
     expect(entry).toHaveProperty("changes");
+    expect(entry).not.toHaveProperty("index");
   }
 });
 

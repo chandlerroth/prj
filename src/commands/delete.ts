@@ -6,15 +6,24 @@ import { select, confirm } from "../lib/prompt.ts";
 import { Spinner } from "../lib/spinner.ts";
 import { getAllStatuses, formatStatusHint } from "../lib/status.ts";
 import { join } from "path";
-import { rmSync } from "fs";
+import { realpathSync, rmSync } from "fs";
+
+function canonicalPath(path: string): string {
+  try {
+    return realpathSync(path);
+  } catch {
+    return path;
+  }
+}
 
 function resolveRepo(arg: string, repos: ReturnType<typeof scanProjects>) {
   if (arg === ".") {
-    const cwd = process.cwd();
-    return repos.find((r) => r.fullPath === cwd) ?? null;
+    const cwd = canonicalPath(process.cwd());
+    return repos.find((r) => canonicalPath(r.fullPath) === cwd) ?? null;
   }
 
-  return repos.find((r) => r.displayName === arg || r.fullPath === arg) ?? null;
+  const target = canonicalPath(arg);
+  return repos.find((r) => r.displayName === arg || canonicalPath(r.fullPath) === target) ?? null;
 }
 
 export async function runDelete(arg: string | undefined, nonInteractive = false, force = false): Promise<void> {
