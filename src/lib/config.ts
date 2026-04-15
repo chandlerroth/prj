@@ -1,4 +1,4 @@
-import { readdirSync } from "fs";
+import { existsSync, readdirSync } from "fs";
 import { join } from "path";
 import { projectsDir, type RepoInfo } from "./paths.ts";
 
@@ -24,8 +24,9 @@ export async function createProjectsDir(): Promise<void> {
 }
 
 /**
- * Scan ~/Projects/<org>/<repo> directories and return all projects.
- * The filesystem is the config — no config file needed.
+ * Scan ~/Projects/<org>/<repo> directories and return tracked git projects.
+ * Non-git directories are ignored so stray folders do not appear as
+ * confusing "Not installed" entries in `prj list` / `prj rm`.
  */
 export function scanProjects(): RepoInfo[] {
   const repos: RepoInfo[] = [];
@@ -38,10 +39,12 @@ export function scanProjects(): RepoInfo[] {
       const projects = readdirSync(orgPath, { withFileTypes: true });
       for (const project of projects) {
         if (!project.isDirectory() || project.name.startsWith(".")) continue;
+        const fullPath = join(orgPath, project.name);
+        if (!existsSync(join(fullPath, ".git"))) continue;
         repos.push({
           username: org.name,
           repoName: project.name,
-          fullPath: join(orgPath, project.name),
+          fullPath,
           displayName: `${org.name}/${project.name}`,
         });
       }

@@ -14,4 +14,4 @@ bun build src/index.ts --compile --outfile prj
 | `prj create .` | Publish current directory as a private GitHub repo |
 | `prj list` | Interactive project selector |
 | `prj search [query]` | Search GitHub repos (interactive picker if no query) |
-| `prj rm [index\|.]` | Remove a project (interactive picker if no index given) |
+| `prj rm [project\|path\|.]` | Remove a project (interactive picker if no target given) |

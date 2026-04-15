@@ -3,7 +3,6 @@ import { executeGitWithOutput, isGitRepo, getStashCount } from "./git.ts";
 import { blue, green, red, yellow } from "./colors.ts";
 
 export interface RepoStatus {
-  index: number;
   displayName: string;
   branch: string | null;
   ahead: number;
@@ -65,13 +64,12 @@ export function parsePorcelainV2(stdout: string): {
  */
 export async function getAllStatuses(repos: RepoInfo[]): Promise<RepoStatus[]> {
   const settled = await Promise.allSettled(
-    repos.map((repo, i) => getRepoStatus(repo, i + 1)),
+    repos.map((repo) => getRepoStatus(repo)),
   );
   return settled.map((r, i) =>
     r.status === "fulfilled"
       ? r.value
       : {
-          index: i + 1,
           displayName: repos[i].displayName,
           branch: null,
           ahead: 0,
@@ -82,9 +80,8 @@ export async function getAllStatuses(repos: RepoInfo[]): Promise<RepoStatus[]> {
   );
 }
 
-export async function getRepoStatus(repo: RepoInfo, index: number): Promise<RepoStatus> {
+export async function getRepoStatus(repo: RepoInfo): Promise<RepoStatus> {
   const status: RepoStatus = {
-    index,
     displayName: repo.displayName,
     branch: null,
     ahead: 0,

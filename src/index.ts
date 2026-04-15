@@ -21,7 +21,7 @@ Commands:
   create, c <name>    Create a new private GitHub repo and clone it
   list, l             Interactive project selector
   search, s [query]   Search GitHub repos (interactive picker if no query)
-  rm [index|.]        Remove a project (interactive picker if no index given)
+  rm [project|path|.] Remove a project (interactive picker if no target given)
   auth [token]        Save a GitHub token (or check status / logout)
   shell-init          Print shell function for auto-cd (eval in your rc file)
   help                Show this help message
@@ -45,7 +45,7 @@ Examples:
   prj list
   prj list --non-interactive
   prj search prj
-  prj rm 1 --force
+  prj rm chandlerroth/prj --force
 `;
 
 const COMMAND_HELP: Record<string, string> = {
@@ -54,7 +54,7 @@ const COMMAND_HELP: Record<string, string> = {
   create: `prj create — Create a new private GitHub repo and clone it\n\nUsage:\n  prj create <name>      Create under your account\n  prj create org/<name>  Create under an organization\n  prj create .           Publish current directory\n`,
   list: `prj list — List projects\n\nUsage:\n  prj list                       Interactive picker (prints selected path)\n  prj list --non-interactive     Emit JSON status for all projects\n`,
   search: `prj search — Search GitHub repos\n\nUsage:\n  prj search [query]\n  prj search [query] --non-interactive   Emit JSON results\n`,
-  rm: `prj rm — Remove a project\n\nUsage:\n  prj rm                 Interactive picker\n  prj rm <index>         Remove by 1-based index\n  prj rm .               Remove the current directory's project\n  prj rm <index> --force Skip safety checks\n`,
+  rm: `prj rm — Remove a project\n\nUsage:\n  prj rm                          Interactive picker\n  prj rm <user/repo>              Remove by project name\n  prj rm </absolute/path>         Remove by absolute path\n  prj rm .                        Remove the current directory's project\n  prj rm <user/repo> --force      Skip safety checks\n`,
   auth: `prj auth — Manage your GitHub token\n\nUsage:\n  prj auth               Show current auth status\n  prj auth <token>       Save a token to ~/.config/prj/config.json\n  prj auth login <token> Same as above\n  prj auth logout        Remove the saved token\n  prj auth status        Show current auth status\n\nCreate a token at https://github.com/settings/tokens (scope: repo)\n`,
   "shell-init": `prj shell-init — Print shell wrapper for auto-cd\n\nUsage:\n  Add this to ~/.zshrc or ~/.bashrc:\n    eval "$(prj shell-init)"\n\nThe wrapper auto-cd's into any directory path printed by prj (e.g.\nfrom 'prj list', 'prj add', 'prj create', 'prj rm').\n`,
 };

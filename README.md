@@ -73,7 +73,7 @@ prj list
 
 # Remove a project
 prj rm      # interactive picker
-prj rm 3    # by index
+prj rm chandlerroth/prj
 prj rm .    # current directory
 ```
 
@@ -87,7 +87,7 @@ prj rm .    # current directory
 | `prj create .` | - | Publish current directory as a private GitHub repo | ✓ |
 | `prj list` | `l` | Interactive project selector | ✓ |
 | `prj search [query]` | `s` | Search GitHub repos (interactive picker if no query) | ✓ |
-| `prj rm [index\|.]` | - | Remove a project (interactive picker if no index given) | ✓ (`--force` for dirty repos) |
+| `prj rm [project\|path\|.]` | - | Remove a project (interactive picker if no target given) | ✓ (`--force` for dirty repos) |
 | `prj auth [token]` | - | Manage GitHub token (status / login / logout) | ✓ (`--action=`, `--token=`) |
 
 ## Flags
@@ -114,17 +114,15 @@ prj auth --non-interactive --action=login --token=ghp_xxx
 ## Status Indicators
 
 ```
-[1]  chandlerroth/prj          git:(main) [✓ clean]
-[2]  chandlerroth/other-repo   git:(main) [2↑ 3 changes]
-[3]  org/some-project          git:(main) [1↓]
+chandlerroth/prj        git:(main) [✓ clean]
+chandlerroth/other-repo git:(main) [2↑ 3 changes]
+org/some-project        git:(main) [1↓]
 ```
 
 - `✓ clean` — No uncommitted changes, up to date with remote
 - `N↑` — Commits ahead of remote
 - `N↓` — Commits behind remote
 - `N changes` — Uncommitted changes
-- `Not installed` — Directory exists but is not a git repo
-
 ## Troubleshooting
 
 **`No GitHub token found`**

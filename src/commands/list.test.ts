@@ -49,7 +49,6 @@ test("list --non-interactive emits an entry per org/repo", async () => {
     "bob/two",
   ]);
   for (const entry of out) {
-    expect(entry).toHaveProperty("index");
     expect(entry).toHaveProperty("fullPath");
     expect(entry).toHaveProperty("installed");
     expect(entry).toHaveProperty("branch");
@@ -57,4 +56,17 @@ test("list --non-interactive emits an entry per org/repo", async () => {
     expect(entry).toHaveProperty("behind");
     expect(entry).toHaveProperty("changes");
   }
+});
+
+test("list --non-interactive ignores non-git directories", async () => {
+  const home = mkdtempSync(join(tmpdir(), "prj-list-"));
+  process.env.HOME = home;
+  const repoDir = join(home, "Projects", "alice", "one");
+  mkdirSync(repoDir, { recursive: true });
+  await Bun.spawn(["git", "init", "-q"], { cwd: repoDir, stdout: "ignore", stderr: "ignore" }).exited;
+  mkdirSync(join(home, "Projects", "alice", "stale"), { recursive: true });
+
+  await runList(true);
+  const out = JSON.parse(stdout);
+  expect(out.map((r: { displayName: string }) => r.displayName)).toEqual(["alice/one"]);
 });

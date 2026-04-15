@@ -136,11 +136,8 @@ export async function select(options: SelectOption[]): Promise<string | null> {
       const opt = filtered[i];
       const prefix = i === selectedIndex ? blue(">") : " ";
       const label = i === selectedIndex ? blue(opt.label) : opt.label;
-      // Find original index for display number
-      const originalIndex = options.indexOf(opt);
-      const indexStr = `[${originalIndex + 1}]`.padEnd(5);
       const hint = opt.hint ? ` ${opt.hint}` : "";
-      process.stderr.write(`${prefix} ${indexStr} ${label}${hint}\n`);
+      process.stderr.write(`${prefix} ${label}${hint}\n`);
     }
 
     // Fill remaining lines if filtered list is shorter

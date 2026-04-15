@@ -95,7 +95,7 @@ test("delete --non-interactive --force removes a clean repo", async () => {
   const dir = join(home, "Projects", "alice", "one");
   await makeRepo(dir);
 
-  await runDelete("1", true, true);
+  await runDelete("alice/one", true, true);
   expect(existsSync(dir)).toBe(false);
 });
 
@@ -104,15 +104,15 @@ test("delete --non-interactive without --force refuses a dirty repo", async () =
   const dir = join(home, "Projects", "alice", "one");
   await makeRepo(dir, true);
 
-  await expect(runDelete("1", true, false)).rejects.toThrow("__exit:1");
+  await expect(runDelete("alice/one", true, false)).rejects.toThrow("__exit:1");
   expect(exitCode).toBe(1);
   expect(existsSync(dir)).toBe(true);
 });
 
-test("delete --non-interactive with out-of-range index errors", async () => {
+test("delete --non-interactive with missing project errors", async () => {
   const home = process.env.HOME!;
   await makeRepo(join(home, "Projects", "alice", "one"));
 
-  await expect(runDelete("99", true, false)).rejects.toThrow("__exit:1");
+  await expect(runDelete("alice/two", true, false)).rejects.toThrow("__exit:1");
   expect(exitCode).toBe(1);
 });

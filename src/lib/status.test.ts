@@ -35,7 +35,7 @@ test("parsePorcelainV2 maps detached HEAD to null branch", () => {
 
 test("formatStatusHint shows clean for installed repo with no changes", () => {
   const s: RepoStatus = {
-    index: 1, displayName: "u/r", branch: "main",
+    displayName: "u/r", branch: "main",
     ahead: 0, behind: 0, changes: 0, installed: true,
   };
   expect(stripAnsi(formatStatusHint(s))).toBe("git:(main) [✓ clean]");
@@ -43,16 +43,8 @@ test("formatStatusHint shows clean for installed repo with no changes", () => {
 
 test("formatStatusHint shows ahead/behind/changes", () => {
   const s: RepoStatus = {
-    index: 1, displayName: "u/r", branch: "main",
+    displayName: "u/r", branch: "main",
     ahead: 1, behind: 2, changes: 3, installed: true,
   };
   expect(stripAnsi(formatStatusHint(s))).toBe("git:(main) [2↓ 1↑ 3 changes]");
-});
-
-test("formatStatusHint shows Not installed", () => {
-  const s: RepoStatus = {
-    index: 1, displayName: "u/r", branch: null,
-    ahead: 0, behind: 0, changes: 0, installed: false,
-  };
-  expect(stripAnsi(formatStatusHint(s))).toBe("Not installed");
 });

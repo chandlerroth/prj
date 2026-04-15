@@ -23,8 +23,12 @@ test("scanProjects returns sorted org/repo entries from ~/Projects", async () =>
   const home = mkdtempSync(join(tmpdir(), "prj-home-"));
   const projects = join(home, "Projects");
   mkdirSync(join(projects, "alice", "one"), { recursive: true });
+  mkdirSync(join(projects, "alice", "one", ".git"), { recursive: true });
   mkdirSync(join(projects, "alice", "two"), { recursive: true });
+  mkdirSync(join(projects, "alice", "two", ".git"), { recursive: true });
   mkdirSync(join(projects, "bob", "three"), { recursive: true });
+  mkdirSync(join(projects, "bob", "three", ".git"), { recursive: true });
+  mkdirSync(join(projects, "bob", "stale"), { recursive: true });
   mkdirSync(join(projects, ".hidden", "skip"), { recursive: true });
   writeFileSync(join(projects, "alice", ".dotfile"), "");
 

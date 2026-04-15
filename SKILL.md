@@ -20,7 +20,7 @@ Manage git repositories under `~/Projects/<org>/<repo>`.
 | `prj create .` | Publish current directory as a private GitHub repo and move it into `~/Projects` |
 | `prj list` | Interactive project selector (cd's into selection via shell integration) |
 | `prj list --non-interactive` | Print status for all projects without interactive picker |
-| `prj rm [index\|.]` | Remove a project (interactive picker if no index given) |
+| `prj rm [project\|path\|.]` | Remove a project (interactive picker if no target given) |
 | `prj rm .` | Remove the project in the current directory |
 
 ## Important Notes
@@ -37,7 +37,7 @@ Manage git repositories under `~/Projects/<org>/<repo>`.
 - **User wants a new project**: Run `prj create <name>` to create the GitHub repo and clone it. Then `cd` into the path and initialize with `bun init` or similar.
 - **User wants to clone an existing repo**: Run `prj add user/repo`.
 - **User wants to see their projects**: Run `prj list --non-interactive` (since Claude cannot use the interactive picker).
-- **User wants to remove a project**: Use `prj rm` with the project index from `prj list --non-interactive`.
+- **User wants to remove a project**: Use `prj rm <user/repo>` or `prj rm <absolute-path>`.
 
 ## Non-Interactive Usage (for Claude)
 

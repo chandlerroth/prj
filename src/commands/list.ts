@@ -24,15 +24,14 @@ export async function runList(nonInteractive = false): Promise<void> {
   spinner?.stop();
 
   if (nonInteractive) {
-    const output = statuses.map((s) => ({
-      index: s.index,
-      displayName: s.displayName,
-      fullPath: repos[s.index - 1].fullPath,
-      installed: s.installed,
-      branch: s.branch,
-      ahead: s.ahead,
-      behind: s.behind,
-      changes: s.changes,
+    const output = repos.map((repo, i) => ({
+      displayName: repo.displayName,
+      fullPath: repo.fullPath,
+      installed: statuses[i].installed,
+      branch: statuses[i].branch,
+      ahead: statuses[i].ahead,
+      behind: statuses[i].behind,
+      changes: statuses[i].changes,
     }));
     console.log(JSON.stringify(output, null, 2));
     return;

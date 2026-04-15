@@ -8,14 +8,22 @@ import { getAllStatuses, formatStatusHint } from "../lib/status.ts";
 import { join } from "path";
 import { rmSync } from "fs";
 
+function resolveRepo(arg: string, repos: ReturnType<typeof scanProjects>) {
+  if (arg === ".") {
+    const cwd = process.cwd();
+    return repos.find((r) => r.fullPath === cwd) ?? null;
+  }
+
+  return repos.find((r) => r.displayName === arg || r.fullPath === arg) ?? null;
+}
+
 export async function runDelete(arg: string | undefined, nonInteractive = false, force = false): Promise<void> {
   const repos = scanProjects();
-
-  let index: number;
+  let repo;
 
   if (!arg) {
     if (nonInteractive) {
-      console.error(red("Usage: prj rm <index|.>"));
+      console.error(red("Usage: prj rm <project|path|.>"));
       process.exit(1);
     }
 
@@ -43,29 +51,18 @@ export async function runDelete(arg: string | undefined, nonInteractive = false,
     const selected = await select(options);
     if (!selected) return;
 
-    index = repos.findIndex((r) => r.fullPath === selected) + 1;
-  } else if (arg === ".") {
-    // Find index by current directory
-    const cwd = process.cwd();
-    index = repos.findIndex((r) => r.fullPath === cwd);
-    if (index === -1) {
+    repo = repos.find((r) => r.fullPath === selected) ?? null;
+  } else {
+    repo = resolveRepo(arg, repos);
+    if (arg === "." && !repo) {
       console.error(red("Current directory is not a tracked project."));
       process.exit(1);
     }
-    index += 1; // Convert to 1-based
-  } else {
-    index = parseInt(arg, 10);
-    if (isNaN(index) || index < 1) {
-      console.error(red("Argument must be a positive number or '.'"));
-      process.exit(1);
-    }
-    if (index > repos.length) {
-      console.error(red(`Index out of range. You have ${repos.length} projects.`));
+    if (!repo) {
+      console.error(red(`Project not found: ${arg}`));
       process.exit(1);
     }
   }
-
-  const repo = repos[index - 1];
 
   if (!force) {
     console.error(`Checking ${repo.displayName}...`);
