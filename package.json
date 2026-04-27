@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "bun run src/index.ts",
     "build": "bun build src/index.ts --compile --outfile prj",
-    "test": "bun test"
+    "test": "bun test",
+    "release": "./scripts/release.sh"
   },
   "devDependencies": {
     "@types/bun": "latest",
