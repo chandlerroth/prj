@@ -95,7 +95,10 @@ export async function select(options: SelectOption[]): Promise<string | null> {
   let filter = "";
   let filtered = [...options];
   let selectedIndex = 0;
-  const maxVisible = Math.min(20, options.length);
+  // Use the full terminal height, reserving 2 lines (1 for filter, 1 for the
+  // shell prompt that will redraw below the menu after we finish).
+  const terminalRows = process.stderr.rows || process.stdout.rows || 24;
+  const maxVisible = Math.min(Math.max(1, terminalRows - 2), options.length);
   // Reserve 1 extra line for the filter input
   const totalLines = maxVisible + 1;
 
