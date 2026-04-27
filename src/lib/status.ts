@@ -8,6 +8,7 @@ export interface RepoStatus {
   ahead: number;
   behind: number;
   changes: number;
+  stashes: number;
   installed: boolean;
 }
 
@@ -75,6 +76,7 @@ export async function getAllStatuses(repos: RepoInfo[]): Promise<RepoStatus[]> {
           ahead: 0,
           behind: 0,
           changes: 0,
+          stashes: 0,
           installed: false,
         },
   );
@@ -87,6 +89,7 @@ export async function getRepoStatus(repo: RepoInfo): Promise<RepoStatus> {
     ahead: 0,
     behind: 0,
     changes: 0,
+    stashes: 0,
     installed: false,
   };
 
@@ -108,9 +111,8 @@ export async function getRepoStatus(repo: RepoInfo): Promise<RepoStatus> {
     status.branch = parsed.branch;
     status.ahead = parsed.ahead;
     status.behind = parsed.behind;
-    // Count stashes alongside dirty files in the "changes" bucket — they
-    // represent unsaved work the user might lose on `prj rm`.
-    status.changes = parsed.changes + stashCount;
+    status.changes = parsed.changes;
+    status.stashes = stashCount;
   }
 
   return status;
@@ -131,6 +133,7 @@ export function formatStatusHint(status: RepoStatus): string {
   if (status.behind > 0) parts.push(blue(`${status.behind}\u2193`));
   if (status.ahead > 0) parts.push(yellow(`${status.ahead}\u2191`));
   if (status.changes > 0) parts.push(red(`${status.changes} changes`));
+  if (status.stashes > 0) parts.push(yellow(`${status.stashes} stash${status.stashes === 1 ? "" : "es"}`));
   if (parts.length === 0) parts.push(green("\u2713 clean"));
 
   return `git:(${blue(branchStr)}) [${parts.join(" ")}]`;

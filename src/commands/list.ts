@@ -32,6 +32,7 @@ export async function runList(nonInteractive = false): Promise<void> {
       ahead: statuses[i].ahead,
       behind: statuses[i].behind,
       changes: statuses[i].changes,
+      stashes: statuses[i].stashes,
     }));
     console.log(JSON.stringify(output, null, 2));
     return;
