@@ -52,7 +52,7 @@ const COMMAND_HELP: Record<string, string> = {
   init: `prj init — Initialize ~/Projects directory\n\nUsage: prj init\n`,
   add: `prj add — Clone a repository\n\nUsage:\n  prj add                Interactive picker over your GitHub repos\n  prj add user/repo      Clone by shorthand\n  prj add <git-url>      Clone by SSH or HTTPS URL\n`,
   create: `prj create — Create a new private GitHub repo and clone it\n\nUsage:\n  prj create <name>      Create under your account\n  prj create org/<name>  Create under an organization\n  prj create .           Publish current directory\n`,
-  list: `prj list — List projects\n\nUsage:\n  prj list                       Interactive picker (prints selected path)\n  prj list --non-interactive     Emit JSON status for all projects\n`,
+  list: `prj list — List projects\n\nUsage:\n  prj list                       Interactive picker. Shows immediately with cached\n                                   status; refreshes hints in the background as\n                                   'git fetch' completes for each repo.\n  prj list --no-fetch            Skip 'git fetch' entirely (use cached refs only)\n  prj list --fetch               Block until all fetches finish, then show picker\n  prj list --non-interactive     Emit JSON status (no fetch by default)\n  prj list --non-interactive --fetch   Same, but refresh remotes first\n`,
   search: `prj search — Search GitHub repos\n\nUsage:\n  prj search [query]\n  prj search [query] --non-interactive   Emit JSON results\n`,
   rm: `prj rm — Remove a project\n\nUsage:\n  prj rm                          Interactive picker\n  prj rm <user/repo>              Remove by project name\n  prj rm </absolute/path>         Remove by absolute path\n  prj rm .                        Remove the current directory's project\n  prj rm <user/repo> --force      Skip safety checks\n`,
   auth: `prj auth — Manage your GitHub token\n\nUsage:\n  prj auth               Show current auth status\n  prj auth <token>       Save a token to ~/.config/prj/config.json\n  prj auth login <token> Same as above\n  prj auth logout        Remove the saved token\n  prj auth status        Show current auth status\n\nCreate a token at https://github.com/settings/tokens (scope: repo)\n`,
@@ -97,6 +97,11 @@ async function main() {
 
   const nonInteractive = args.includes("--non-interactive");
   const force = args.includes("--force");
+  const fetchFlag = args.includes("--no-fetch")
+    ? false
+    : args.includes("--fetch")
+      ? true
+      : undefined;
   // Extract `--key=value` flags for non-interactive command inputs.
   function flag(name: string): string | undefined {
     const prefix = `--${name}=`;
@@ -124,7 +129,7 @@ async function main() {
         break;
 
       case "list":
-        await runList(nonInteractive);
+        await runList(nonInteractive, fetchFlag);
         break;
 
       case "rm":

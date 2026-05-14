@@ -1,5 +1,5 @@
 import { type RepoInfo } from "./paths.ts";
-import { executeGitWithOutput, isGitRepo, getStashCount } from "./git.ts";
+import { executeGitWithOutput, isGitRepo, getStashCount, fetch as gitFetch } from "./git.ts";
 import { blue, green, red, yellow } from "./colors.ts";
 
 export interface RepoStatus {
@@ -58,14 +58,24 @@ export function parsePorcelainV2(stdout: string): {
   return { branch, ahead, behind, changes };
 }
 
+export interface StatusOptions {
+  /** Run `git fetch` before reading status so ahead/behind reflects the remote. */
+  fetch?: boolean;
+  /** Aborts an in-flight fetch (e.g. the picker closed before it completed). */
+  signal?: AbortSignal;
+}
+
 /**
  * Resolve status for every repo in parallel. Uses `allSettled` so a single
  * misbehaving repo (e.g. permissions, corrupted .git) can't sink the listing.
  * Failed repos are returned as `installed: false` placeholders.
  */
-export async function getAllStatuses(repos: RepoInfo[]): Promise<RepoStatus[]> {
+export async function getAllStatuses(
+  repos: RepoInfo[],
+  options: StatusOptions = {},
+): Promise<RepoStatus[]> {
   const settled = await Promise.allSettled(
-    repos.map((repo) => getRepoStatus(repo)),
+    repos.map((repo) => getRepoStatus(repo, options)),
   );
   return settled.map((r, i) =>
     r.status === "fulfilled"
@@ -82,7 +92,10 @@ export async function getAllStatuses(repos: RepoInfo[]): Promise<RepoStatus[]> {
   );
 }
 
-export async function getRepoStatus(repo: RepoInfo): Promise<RepoStatus> {
+export async function getRepoStatus(
+  repo: RepoInfo,
+  options: StatusOptions = {},
+): Promise<RepoStatus> {
   const status: RepoStatus = {
     displayName: repo.displayName,
     branch: null,
@@ -98,6 +111,13 @@ export async function getRepoStatus(repo: RepoInfo): Promise<RepoStatus> {
   }
 
   status.installed = true;
+
+  // Refresh remote-tracking refs first so ahead/behind isn't stale. Failures
+  // (no remote, offline, auth error, aborted) just leave us with cached refs.
+  if (options.fetch) {
+    await gitFetch(repo.fullPath, { signal: options.signal });
+    if (options.signal?.aborted) return status;
+  }
 
   // Single git call gives us branch, ahead/behind, and change count.
   // Run stash list in parallel since it can't be folded into porcelain.

@@ -83,17 +83,38 @@ interface SelectOption {
   hint?: string;
 }
 
+/** Live-update handle exposed to the caller via the `onReady` hook. */
+export interface SelectControl {
+  /** Replace the hint for the option matching `value`. No-op after the prompt closes. */
+  setHint(value: string, hint: string): void;
+  /** Becomes true after the user picks/cancels — useful for short-circuiting background work. */
+  readonly closed: boolean;
+  /** Aborted when the prompt closes. Pass to background tasks to stop them on pick/cancel. */
+  readonly signal: AbortSignal;
+}
+
+interface SelectHooks {
+  /** Called once after the initial render. Lets the caller stream in updates. */
+  onReady?(control: SelectControl): void;
+}
+
 /**
  * Interactive select prompt with type-to-filter
  * All UI output goes to stderr, result goes to stdout
  */
-export async function select(options: SelectOption[]): Promise<string | null> {
+export async function select(
+  options: SelectOption[],
+  hooks: SelectHooks = {},
+): Promise<string | null> {
   if (options.length === 0) {
     return null;
   }
 
+  // Mutable copies so the live `setHint` channel can rewrite hints without
+  // disturbing what the caller passed in.
+  const items = options.map((o) => ({ ...o }));
   let filter = "";
-  let filtered = [...options];
+  let filtered = [...items];
   let selectedIndex = 0;
   // Use the full terminal height, reserving 2 lines (1 for filter, 1 for the
   // shell prompt that will redraw below the menu after we finish).
@@ -110,9 +131,9 @@ export async function select(options: SelectOption[]): Promise<string | null> {
   process.stdin.resume();
 
   const getFiltered = (): SelectOption[] => {
-    if (!filter) return [...options];
+    if (!filter) return [...items];
     const lower = filter.toLowerCase();
-    return options.filter((opt) => opt.label.toLowerCase().includes(lower));
+    return items.filter((opt) => opt.label.toLowerCase().includes(lower));
   };
 
   const render = () => {
@@ -154,6 +175,25 @@ export async function select(options: SelectOption[]): Promise<string | null> {
     process.stderr.write("\n");
   }
   render();
+
+  // Live-update channel. The caller can rewrite hints (e.g. as background
+  // `git fetch` results trickle in) and we'll redraw in place. The signal
+  // gives callers a way to abort background work the moment we close.
+  let closed = false;
+  const abortController = new AbortController();
+  const indexByValue = new Map(items.map((o, i) => [o.value, i]));
+  const control: SelectControl = {
+    get closed() { return closed; },
+    signal: abortController.signal,
+    setHint(value, hint) {
+      if (closed) return;
+      const idx = indexByValue.get(value);
+      if (idx === undefined) return;
+      items[idx].hint = hint;
+      render();
+    },
+  };
+  hooks.onReady?.(control);
 
   return new Promise((resolve) => {
     const onKeypress = (data: Buffer) => {
@@ -211,6 +251,8 @@ export async function select(options: SelectOption[]): Promise<string | null> {
     };
 
     const cleanup = () => {
+      closed = true;
+      abortController.abort();
       process.stdin.removeListener("data", onKeypress);
       if (process.stdin.isTTY) {
         process.stdin.setRawMode(false);

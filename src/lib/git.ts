@@ -47,10 +47,23 @@ export async function cloneRepo(url: string, targetDir: string): Promise<boolean
   return exitCode === 0;
 }
 
-/** Fetch from remote. */
-export async function fetch(cwd: string): Promise<boolean> {
-  const { exitCode } = await executeGitQuiet(["fetch"], cwd);
-  return exitCode === 0;
+/** Fetch from remote. Killed if it takes longer than `timeoutMs` (so a single
+ *  unreachable remote can't hang `prj list`) or if `signal` aborts (so background
+ *  fetches stop the moment the user picks a repo). The child is `unref`'d so it
+ *  can't keep the parent process alive on its own. */
+export async function fetch(
+  cwd: string,
+  opts: { timeoutMs?: number; signal?: AbortSignal } = {},
+): Promise<boolean> {
+  const proc = Bun.spawn(["git", "fetch"], { cwd, stdout: "ignore", stderr: "ignore" });
+  proc.unref();
+  const timer = setTimeout(() => proc.kill(), opts.timeoutMs ?? 15000);
+  const onAbort = () => proc.kill();
+  opts.signal?.addEventListener("abort", onAbort, { once: true });
+  await proc.exited;
+  clearTimeout(timer);
+  opts.signal?.removeEventListener("abort", onAbort);
+  return proc.exitCode === 0;
 }
 
 /** Get current branch name. */

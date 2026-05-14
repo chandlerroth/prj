@@ -78,3 +78,32 @@ test("select returns null on escape", async () => {
   process.stdin.emit("data", Buffer.from("\x1b"));
   await expect(p).resolves.toBeNull();
 });
+
+test("select onReady receives a control that lives until pick, then aborts", async () => {
+  let captured: { closed: boolean; signal: AbortSignal } | null = null;
+  const p = select(
+    [
+      { label: "alpha", value: "a" },
+      { label: "bravo", value: "b" },
+    ],
+    {
+      onReady(control) {
+        captured = control;
+        // Update bravo's hint while the prompt is open.
+        control.setHint("b", "(updated)");
+      },
+    },
+  );
+
+  expect(captured).not.toBeNull();
+  expect(captured!.closed).toBe(false);
+  expect(captured!.signal.aborted).toBe(false);
+  // Hint update should be visible in the rendered output.
+  expect(stderr).toContain("(updated)");
+
+  process.stdin.emit("data", Buffer.from("\r"));
+  await expect(p).resolves.toBe("a");
+
+  expect(captured!.closed).toBe(true);
+  expect(captured!.signal.aborted).toBe(true);
+});

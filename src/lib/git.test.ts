@@ -120,10 +120,37 @@ test("getRepoStatus end-to-end against a real repo via porcelain v2", async () =
     fullPath: repoDir,
     displayName: "tmp/repo",
   };
-  const status = await getRepoStatus(repo, 1);
+  const status = await getRepoStatus(repo);
   expect(status.installed).toBe(true);
   expect(status.branch === "main" || status.branch === "master").toBe(true);
   expect(status.changes).toBeGreaterThanOrEqual(2);
+});
+
+test("getRepoStatus({ fetch: true }) survives an unreachable remote", async () => {
+  if (!hasGit) return;
+  // Point origin at a nonexistent local path so `git fetch` fails fast (no DNS,
+  // no network). The status read should still succeed.
+  await Bun.spawn(
+    ["git", "-C", repoDir, "remote", "add", "origin", "file:///nonexistent/prj-test.git"],
+    { stdout: "ignore", stderr: "ignore" },
+  ).exited;
+
+  try {
+    const repo = {
+      username: "tmp",
+      repoName: "repo",
+      fullPath: repoDir,
+      displayName: "tmp/repo",
+    };
+    const status = await getRepoStatus(repo, { fetch: true });
+    expect(status.installed).toBe(true);
+    expect(status.branch === "main" || status.branch === "master").toBe(true);
+  } finally {
+    await Bun.spawn(
+      ["git", "-C", repoDir, "remote", "remove", "origin"],
+      { stdout: "ignore", stderr: "ignore" },
+    ).exited;
+  }
 });
 
 test("parsePorcelainV2 ignores lines it doesn't recognize", () => {
